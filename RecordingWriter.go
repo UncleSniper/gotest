@@ -36,9 +36,7 @@ func(writer *RecordingWriter) Write(bytes []byte) (int, error) {
 		return 0, errors.New(fmt.Sprintf("Expected only %d writes, but got at least one more", expectCount))
 	}
 	expected := writer.expected[index]
-	saved := make([]byte, len(bytes))
-	copy(saved, bytes)
-	writer.Actual = append(writer.Actual, saved)
+	writer.Actual = append(writer.Actual, CopySlice(bytes))
 	if expected.Matcher != nil {
 		expected.Matcher.Match(
 			writer.contextPlus.Context,
