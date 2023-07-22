@@ -1,6 +1,6 @@
 package gotest
 
-func EqualToBytes(expected []byte) Matcher[[]byte] {
+func EqualToBytes(expected ...byte) Matcher[[]byte] {
 	return FuncMatcher[[]byte] {
 		Func: func(context TestContext, assumption bool, actual []byte, descriptor Descriptor[[]byte]) {
 			length := len(actual)
