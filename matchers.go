@@ -747,3 +747,7 @@ func NotNil[T any](nilChecker func(T) bool) Matcher[T] {
 func IsPointerNil[T any](pointer *T) bool {
 	return pointer == nil
 }
+
+func IsMapNil[KeyT comparable, ValueT any](theMap map[KeyT]ValueT) bool {
+	return theMap == nil
+}
