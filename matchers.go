@@ -717,3 +717,29 @@ func SliceLengthWhichHas[ElementT any](lengthPattern Matcher[int]) CollectionMat
 func SliceLengthWhichYaKnow[ElementT any](lengthPattern Matcher[int]) CollectionMatcher[ElementT, []ElementT] {
 	return SliceLengthWhichIs[ElementT](lengthPattern)
 }
+
+func Nil[T any](nilChecker func(T) bool) Matcher[T] {
+	return FuncMatcher[T] {
+		Func: func(context TestContext, assumption bool, actual T, descriptor Descriptor[T]) {
+			if !nilChecker(actual) {
+				Abort(context, assumption)(
+					"Expected %s to be nil, but was not",
+					doDescribe(actual, descriptor),
+				)
+			}
+		},
+	}
+}
+
+func NotNil[T any](nilChecker func(T) bool) Matcher[T] {
+	return FuncMatcher[T] {
+		Func: func(context TestContext, assumption bool, actual T, descriptor Descriptor[T]) {
+			if nilChecker(actual) {
+				Abort(context, assumption)(
+					"Expected %s to be non-nil, but was not",
+					doDescribe(actual, descriptor),
+				)
+			}
+		},
+	}
+}
