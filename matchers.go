@@ -145,6 +145,12 @@ type CollectionAllMatcher[ElementT any, CollectionT any] interface {
 	Distinct() CollectionAllMatcher[ElementT, CollectionT]
 }
 
+type MapMatcher[KeyT comparable, ValueT any, CollectionT any] interface {
+	Matcher[CollectionT]
+	KeyDescribed(descriptor Descriptor[KeyT]) MapMatcher[KeyT, ValueT, CollectionT]
+	ValueDescribed(descriptor Descriptor[ValueT]) MapMatcher[KeyT, ValueT, CollectionT]
+}
+
 type containsMatcher[ElementT comparable] struct {
 	expectedElements []ElementT
 	all bool
@@ -750,4 +756,118 @@ func IsPointerNil[T any](pointer *T) bool {
 
 func IsMapNil[KeyT comparable, ValueT any](theMap map[KeyT]ValueT) bool {
 	return theMap == nil
+}
+
+type mapSizeMatcher[KeyT comparable, ValueT any] struct {
+	expectedSize int
+	sizeMatcher Matcher[int]
+	keyDescriptor Descriptor[KeyT]
+	valueDescriptor Descriptor[ValueT]
+}
+
+func(matcher *mapSizeMatcher[KeyT, ValueT]) describeActual(
+	actual map[KeyT]ValueT,
+	mapDescriptor Descriptor[map[KeyT]ValueT],
+) string {
+	if mapDescriptor == nil {
+		mapDescriptor = DescribeMapByPair(matcher.keyDescriptor, matcher.valueDescriptor)
+	}
+	return mapDescriptor(actual)
+}
+
+func(matcher *mapSizeMatcher[KeyT, ValueT]) KeyDescribed(
+	descriptor Descriptor[KeyT],
+) MapMatcher[KeyT, ValueT, map[KeyT]ValueT] {
+	if matcher != nil {
+		matcher.keyDescriptor = descriptor
+	}
+	return matcher
+}
+
+func(matcher *mapSizeMatcher[KeyT, ValueT]) ValueDescribed(
+	descriptor Descriptor[ValueT],
+) MapMatcher[KeyT, ValueT, map[KeyT]ValueT] {
+	if matcher != nil {
+		matcher.valueDescriptor = descriptor
+	}
+	return matcher
+}
+
+func(matcher *mapSizeMatcher[KeyT, ValueT]) Match(
+	context TestContext,
+	assumption bool,
+	actual map[KeyT]ValueT,
+	mapDescriptor Descriptor[map[KeyT]ValueT],
+) {
+	if matcher.sizeMatcher == nil {
+		if len(actual) != matcher.expectedSize {
+			Abort(context, assumption)(
+				"Expected %s to have size %d, but had size %s",
+				matcher.describeActual(actual, mapDescriptor),
+				matcher.expectedSize,
+				len(actual),
+			)
+		}
+	} else {
+		capture := &CaptureTestContext {}
+		defer capture.CleanOwnHouse()
+		matcher.sizeMatcher.Match(
+			capture,
+			assumption,
+			len(actual),
+			func(gotSize int) string {
+				return fmt.Sprintf("size %d", gotSize)
+			},
+		)
+		didFail, matchFailMessage := capture.GetRecordedFailure(assumption)
+		if didFail {
+			Abort(context, assumption)(
+				"Expected %s to have matching size, but had size %d: %s",
+				matcher.describeActual(actual, mapDescriptor),
+				len(actual),
+				matchFailMessage,
+			)
+		}
+	}
+}
+
+func MapSize[KeyT comparable, ValueT any](expectedSize int) MapMatcher[KeyT, ValueT, map[KeyT]ValueT] {
+	return &mapSizeMatcher[KeyT, ValueT] {
+		expectedSize: expectedSize,
+	}
+}
+
+func MapSizeWhichIs[KeyT comparable, ValueT any](
+	sizePattern Matcher[int],
+) MapMatcher[KeyT, ValueT, map[KeyT]ValueT] {
+	if sizePattern == nil {
+		panic("No map size pattern provided")
+	}
+	return &mapSizeMatcher[KeyT, ValueT] {
+		sizeMatcher: sizePattern,
+	}
+}
+
+func MapSizeWhichDoes[KeyT comparable, ValueT any](
+	sizePattern Matcher[int],
+) MapMatcher[KeyT, ValueT, map[KeyT]ValueT] {
+	return MapSizeWhichIs[KeyT, ValueT](sizePattern)
+}
+
+func MapSizeWhichWill[KeyT comparable, ValueT any](
+	sizePattern Matcher[int],
+) MapMatcher[KeyT, ValueT, map[KeyT]ValueT] {
+	return MapSizeWhichIs[KeyT, ValueT](sizePattern)
+}
+
+func MapSizeWhichHas[KeyT comparable, ValueT any](
+	sizePattern Matcher[int],
+) MapMatcher[KeyT, ValueT, map[KeyT]ValueT] {
+	return MapSizeWhichIs[KeyT, ValueT](sizePattern)
+}
+
+func MapSizeWhichYaKnow[KeyT comparable, ValueT any](
+	sizePattern Matcher[int],
+) MapMatcher[KeyT, ValueT, map[KeyT]ValueT] {
+	return MapSizeWhichIs[KeyT, ValueT](sizePattern)
 }

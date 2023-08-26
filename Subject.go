@@ -105,33 +105,57 @@ func DescribeSliceByElement[ElementT any](elementDescriptor Descriptor[ElementT]
 			return "nil"
 		}
 		var builder strings.Builder
-		var err error
-		_, err = builder.WriteRune('[')
-		if err != nil {
-			panic("Failed to describe slice: Failed to add initiator: " + err.Error())
-		}
+		builder.WriteRune('[')
 		var elementDescr string
 		for index, found := range slice {
 			if index > 0 {
-				_, err = builder.WriteString(", ")
-				if err != nil {
-					panic("Failed to describe slice: Failed to add separator: " + err.Error())
-				}
+				 builder.WriteString(", ")
 			}
 			if elementDescriptor == nil {
 				elementDescr = fmt.Sprintf("%v", found)
 			} else {
 				elementDescr = elementDescriptor(found)
 			}
-			_, err = builder.WriteString(elementDescr)
-			if err != nil {
-				panic("Failed to describe slice: Failed to describe element: " + err.Error())
+			builder.WriteString(elementDescr)
+		}
+		builder.WriteRune(']')
+		return builder.String()
+	}
+}
+
+func DescribeMapByPair[KeyT comparable, ValueT any](
+	keyDescriptor Descriptor[KeyT],
+	valueDescriptor Descriptor[ValueT],
+) Descriptor[map[KeyT]ValueT] {
+	return func(theMap map[KeyT]ValueT) string {
+		if theMap == nil {
+			return "nil"
+		}
+		var builder strings.Builder
+		builder.WriteRune('{')
+		var keyDescr, valueDescr string
+		hadPair := false
+		for key, value := range theMap {
+			if hadPair {
+				builder.WriteString(", ")
+			} else {
+				hadPair = true
 			}
+			if keyDescriptor == nil {
+				keyDescr = fmt.Sprintf("%v", key)
+			} else {
+				keyDescr = keyDescriptor(key)
+			}
+			builder.WriteString(keyDescr)
+			builder.WriteString(": ")
+			if valueDescriptor == nil {
+				valueDescr = fmt.Sprintf("%v", value)
+			} else {
+				valueDescr = valueDescriptor(value)
+			}
+			builder.WriteString(valueDescr)
 		}
-		_, err = builder.WriteRune(']')
-		if err != nil {
-			panic("Failed to describe slice: Failed to add terminator: " + err.Error())
-		}
+		builder.WriteRune('}')
 		return builder.String()
 	}
 }
