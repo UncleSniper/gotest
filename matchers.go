@@ -743,3 +743,7 @@ func NotNil[T any](nilChecker func(T) bool) Matcher[T] {
 		},
 	}
 }
+
+func IsPointerNil[T any](pointer *T) bool {
+	return pointer == nil
+}
