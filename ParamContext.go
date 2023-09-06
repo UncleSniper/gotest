@@ -95,3 +95,34 @@ func(context *ParamContext[ParamT]) Do(bodies ...ParameterizedTestCase[ParamT]) 
 	}
 	return context
 }
+
+type Rangeable interface {
+	int | uint | int8 | uint8 | int16 | uint16 | int32 | uint32 | int64 | uint64 | float32 | float64
+}
+
+func ForRange[ParamT Rangeable](
+	context TestContext,
+	name string,
+	start ParamT,
+	stop ParamT,
+	step ParamT,
+) *ParamContext[ParamT] {
+	if context == nil {
+		panic("No test context provided")
+	}
+	var values []ParamT
+	for value := start; value < stop; value += step {
+		values = append(values, value)
+	}
+	return &ParamContext[ParamT] {
+		testContext: context,
+		Params: values,
+		paramDescriptor: func(value ParamT) string {
+			if len(name) > 0 {
+				return fmt.Sprintf("%s = %v", name, value)
+			} else {
+				return fmt.Sprintf("%v", value)
+			}
+		},
+	}
+}
