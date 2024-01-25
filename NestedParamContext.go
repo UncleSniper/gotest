@@ -276,3 +276,11 @@ func nestedBodyExecutor4[Param0T any, Param1T any, Param2T any, Param3T any](
 		innerContext0.cleanOwnHouse()
 	}
 }
+
+func(context *NestedParamContext[ParamsT, BodyT]) Do(bodies ...BodyT) *NestedParamContext[ParamsT, BodyT] {
+	if context == nil {
+		return nil
+	}
+	context.bodyExecutor(context.testContext, context.Params, bodies)
+	return context
+}
